@@ -23,12 +23,12 @@ const allowedOrigins = [
 ];
 app.use(cors({
   origin: (origin, callback) => {
-    // allow requests with no origin (like mobile apps or curl)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('CORS not allowed for this origin'), false);
-    }
-    return callback(null, true);
+    if (!origin) return callback(null, true); // allow mobile apps, curl
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true); // allowed origin
+    } 
+    // Not allowed origin – just return null, don't throw
+    return callback(null, false); 
   },
   credentials: true,
 }));
