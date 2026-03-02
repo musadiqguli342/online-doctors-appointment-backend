@@ -17,22 +17,15 @@ const sendEmail = require("./utils/email");
 
 const app = express();
 
-const allowedOrigins = [
-  "https://online-doctor-appointments-frontend.netlify.app",
-  "http://localhost:3000",
-];
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow mobile apps, curl
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true); // allowed origin
-    } 
-    // Not allowed origin – just return null, don't throw
-    return callback(null, false); 
-  },
-  credentials: true,
+  origin: [
+    "https://online-doctor-appointments-frontend.netlify.app",
+    "http://localhost:3000"
+  ],
+  credentials: true
 }));
 
+app.options("*", cors()); 
 app.use(express.json());
 
 // connect db INSIDE handler safe zone
