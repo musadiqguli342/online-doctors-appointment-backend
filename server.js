@@ -18,7 +18,7 @@ const sendEmail = require("./utils/email");
 const app = express();
 
 const allowedOrigins = [
-  "https://doctor-appointments-frontend.netlify.app",
+  "https://online-doctor-appointments-frontend.netlify.app",
   "http://localhost:3000",
 ];
 
