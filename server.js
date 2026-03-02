@@ -17,11 +17,17 @@ const sendEmail = require("./utils/email");
 
 const app = express();
 
-const allowedOrigins = [
-  "https://online-doctor-appointments-frontend.netlify.app",
-  "http://localhost:3000",
-];
-
+app.use(
+  cors({
+    origin: [
+      "https://online-doctors-appointment-backend.vercel.app",
+      "http://localhost:3000",
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(
   cors({
     origin: function (origin, callback) {
