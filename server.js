@@ -55,5 +55,4 @@ if (!process.env.VERCEL) {
   });
 }
 
-const serverless = require("serverless-http");
-module.exports = serverless(app);
+module.exports = app;
