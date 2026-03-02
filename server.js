@@ -25,7 +25,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.options("*", cors()); 
+
 app.use(express.json());
 
 // connect db INSIDE handler safe zone
@@ -50,9 +50,10 @@ app.get("/", (req, res) => {
 });
 
 if (!process.env.VERCEL) {
-  app.listen(5000, () =>
-    console.log("Server running on http://localhost:5000"),
-  );
+  app.listen(5000, () => {
+    console.log("Server running on http://localhost:5000");
+  });
 }
 
-module.exports = app;
+const serverless = require("serverless-http");
+module.exports = serverless(app);
