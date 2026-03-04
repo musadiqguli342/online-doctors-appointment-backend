@@ -68,14 +68,8 @@ exports.addDoctor = async (req, res) => {
       availabilitySlots,
     } = req.body;
 
-    let imagePath = "";
-    if (req.file) {
-      // Upload image to Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "doctors",
-      });
-      imagePath = result.secure_url;
-    }
+    // ✅ When using CloudinaryStorage
+    const imagePath = req.file ? req.file.path : "";
 
     const doctor = new Doctor({
       name,
@@ -91,10 +85,12 @@ exports.addDoctor = async (req, res) => {
       availabilitySlots: [],
     });
 
-    // Parse availability
-    const slots = Array.isArray(availabilitySlots)
-      ? availabilitySlots
-      : JSON.parse(availabilitySlots || "[]");
+    let slots = [];
+    try {
+      slots = JSON.parse(availabilitySlots || "[]");
+    } catch (err) {
+      console.log("Invalid availability JSON");
+    }
 
     slots.forEach((slot) => {
       doctor.availabilitySlots.push({
@@ -103,8 +99,6 @@ exports.addDoctor = async (req, res) => {
         startTime: slot.startTime,
         endTime: slot.endTime,
         duration: slot.duration || 30,
-        month: slot.month,
-        year: slot.year,
         date: slot.date || null,
       });
     });
@@ -112,6 +106,7 @@ exports.addDoctor = async (req, res) => {
     await doctor.save();
 
     res.status(201).json({ success: true, doctor });
+
   } catch (error) {
     console.error("Add Doctor Error:", error);
     res.status(500).json({ success: false, message: error.message });
