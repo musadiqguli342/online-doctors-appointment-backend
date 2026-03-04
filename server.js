@@ -18,7 +18,7 @@ const sendEmail = require("./utils/email");
 const app = express();
 
 app.use(cors({
-  origin: "https://online-doctors-appointment-frontend.netlify.app/",
+  origin: "https://online-doctors-appointment-frontend.netlify.app",
   credentials: true
 }));
 
