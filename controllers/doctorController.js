@@ -1,7 +1,35 @@
 const Doctor = require("../models/Doctor");
 const Review = require("../models/Review")
-const fs = require("fs");
-const path = require("path");
+const cloudinary = require("cloudinary").v2;
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+});
+
+// exports.getAllDoctors = async (req, res) => {
+//   try {
+//     const doctors = await Doctor.find().lean();
+//     const doctorsWithReviews = await Promise.all(
+//       doctors.map(async (doc) => {
+//         const reviews = await Review.find({ doctor: doc._id }).lean();
+//         const avgRating =
+//           reviews.length > 0
+//             ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+//             : 0;
+//         return { ...doc, reviews, avgRating };
+//       })
+//     );
+//     res.json(doctorsWithReviews);
+//   } catch (err) {
+//     console.error("GET DOCTORS ERROR:", err);   
+//     res.status(500).json({ error: err.message }); 
+//   }
+// };
+
+
 
 
 exports.getAllDoctors = async (req, res) => {
@@ -19,10 +47,77 @@ exports.getAllDoctors = async (req, res) => {
     );
     res.json(doctorsWithReviews);
   } catch (err) {
-    console.error("GET DOCTORS ERROR:", err);   
-    res.status(500).json({ error: err.message }); 
+    console.error("GET DOCTORS ERROR:", err);
+    res.status(500).json({ error: err.message });
   }
 };
+
+// ========== ADD DOCTOR ==========
+exports.addDoctor = async (req, res) => {
+  try {
+    const {
+      name,
+      email,
+      phone,
+      specialization,
+      experience,
+      education,
+      certifications,
+      languages,
+      hospital,
+      availabilitySlots,
+    } = req.body;
+
+    let imagePath = "";
+    if (req.file) {
+      // Upload image to Cloudinary
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "doctors",
+      });
+      imagePath = result.secure_url;
+    }
+
+    const doctor = new Doctor({
+      name,
+      email,
+      phone,
+      specialization,
+      experience,
+      education,
+      certifications,
+      languages,
+      hospital,
+      image: imagePath,
+      availabilitySlots: [],
+    });
+
+    // Parse availability
+    const slots = Array.isArray(availabilitySlots)
+      ? availabilitySlots
+      : JSON.parse(availabilitySlots || "[]");
+
+    slots.forEach((slot) => {
+      doctor.availabilitySlots.push({
+        type: slot.type || "weekly",
+        dayOfWeek: slot.dayOfWeek,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        duration: slot.duration || 30,
+        month: slot.month,
+        year: slot.year,
+        date: slot.date || null,
+      });
+    });
+
+    await doctor.save();
+
+    res.status(201).json({ success: true, doctor });
+  } catch (error) {
+    console.error("Add Doctor Error:", error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 
 
 function formatAvailabilitySlots(slots) {
@@ -82,64 +177,64 @@ exports.getDoctorById = async (req, res) => {
 };
 
 
-exports.addDoctor = async (req, res) => {
-  try {
-    const {
-      name,
-      email,
-      phone,
-      specialization,
-      experience,
-      education,
-      certifications,
-      languages,
-      hospital,
-      availabilitySlots,
-    } = req.body;
+// exports.addDoctor = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       email,
+//       phone,
+//       specialization,
+//       experience,
+//       education,
+//       certifications,
+//       languages,
+//       hospital,
+//       availabilitySlots,
+//     } = req.body;
 
-    const imagePath = req.file ? req.file.path : "";
+//     const imagePath = req.file ? req.file.path || req.file.filename || req.file.secure_url : "";
 
-    const doctor = new Doctor({
-      name,
-      email,
-      phone,
-      specialization,
-      experience,
-      education,
-      certifications,
-      languages,
-      hospital,
-      image: imagePath,
-      availabilitySlots: [],
-    });
+//     const doctor = new Doctor({
+//       name,
+//       email,
+//       phone,
+//       specialization,
+//       experience,
+//       education,
+//       certifications,
+//       languages,
+//       hospital,
+//       image: imagePath,
+//       availabilitySlots: [],
+//     });
 
-    // ONLY ONCE declare slots
-    const slots = Array.isArray(availabilitySlots)
-      ? availabilitySlots
-      : JSON.parse(availabilitySlots || "[]");
+//     // ONLY ONCE declare slots
+//     const slots = Array.isArray(availabilitySlots)
+//       ? availabilitySlots
+//       : JSON.parse(availabilitySlots || "[]");
 
-    // Correct normalization
-    slots.forEach((slot) => {
-      doctor.availabilitySlots.push({
-        type: slot.type || "weekly",
-        dayOfWeek: slot.dayOfWeek,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        duration: slot.duration || 30,
-        month: slot.month,
-        year: slot.year,
-        date: slot.date || null,
-      });
-    });
+//     // Correct normalization
+//     slots.forEach((slot) => {
+//       doctor.availabilitySlots.push({
+//         type: slot.type || "weekly",
+//         dayOfWeek: slot.dayOfWeek,
+//         startTime: slot.startTime,
+//         endTime: slot.endTime,
+//         duration: slot.duration || 30,
+//         month: slot.month,
+//         year: slot.year,
+//         date: slot.date || null,
+//       });
+//     });
 
-    await doctor.save();
+//     await doctor.save();
 
-    res.status(201).json({ success: true, doctor });
-  } catch (error) {
-    console.error("Add Doctor Error:", error);
-    res.status(500).json({ success: false, message: "Failed to add doctor" });
-  }
-};
+//     res.status(201).json({ success: true, doctor });
+//   } catch (error) {
+//     console.error("Add Doctor Error:", error);
+//     res.status(500).json({ success: false, message: "Failed to add doctor" });
+//   }
+// };
 
 exports.updateDoctor = async (req, res) => {
   try {
