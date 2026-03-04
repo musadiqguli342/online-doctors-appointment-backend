@@ -1,6 +1,7 @@
 const Doctor = require("../models/Doctor");
 const Review = require("../models/Review")
-
+const fs = require("fs");
+const path = require("path");
 
 
 exports.getAllDoctors = async (req, res) => {
@@ -81,23 +82,112 @@ exports.getDoctorById = async (req, res) => {
 };
 
 
+// exports.addDoctor = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       email,
+//       phone,
+//       specialization,
+//       experience,
+//       education,
+//       certifications,
+//       languages,
+//       hospital,
+//       availabilitySlots,
+//     } = req.body;
+
+//     const imagePath = req.file ? req.file.path : "";
+
+//     const doctor = new Doctor({
+//       name,
+//       email,
+//       phone,
+//       specialization,
+//       experience,
+//       education,
+//       certifications,
+//       languages,
+//       hospital,
+//       image: imagePath,
+//       availabilitySlots: [],
+//     });
+
+//     // ONLY ONCE declare slots
+//     const slots = Array.isArray(availabilitySlots)
+//       ? availabilitySlots
+//       : JSON.parse(availabilitySlots || "[]");
+
+//     // Correct normalization
+//     slots.forEach((slot) => {
+//       doctor.availabilitySlots.push({
+//         type: slot.type || "weekly",
+//         dayOfWeek: slot.dayOfWeek,
+//         startTime: slot.startTime,
+//         endTime: slot.endTime,
+//         duration: slot.duration || 30,
+//         month: slot.month,
+//         year: slot.year,
+//         date: slot.date || null,
+//       });
+//     });
+
+//     await doctor.save();
+
+//     res.status(201).json({ success: true, doctor });
+//   } catch (error) {
+//     console.error("Add Doctor Error:", error);
+//     res.status(500).json({ success: false, message: "Failed to add doctor" });
+//   }
+// };
+
+
+
+
 exports.addDoctor = async (req, res) => {
   try {
+    // 1️⃣ Log incoming data for debugging
+    console.log("REQ.BODY:", req.body);
+    console.log("REQ.FILE:", req.file);
+
+    // 2️⃣ Destructure fields
     const {
       name,
       email,
       phone,
       specialization,
-      experience,
-      education,
-      certifications,
-      languages,
-      hospital,
-      availabilitySlots,
+      experience = "",
+      education = "",
+      certifications = "",
+      languages = "",
+      hospital = "",
+      availabilitySlots = "[]", // default to empty array
     } = req.body;
 
-    const imagePath = req.file ? req.file.path : "";
+    // 3️⃣ Handle Cloudinary image safely
+    let imagePath = "";
+    if (req.file) {
+      if (req.file.path) {
+        imagePath = req.file.path; // path from Cloudinary
+      } else if (req.file.filename) {
+        imagePath = req.file.filename; // fallback
+      }
+    }
 
+    // 4️⃣ Parse availabilitySlots safely
+    let slots = [];
+    try {
+      slots = Array.isArray(availabilitySlots)
+        ? availabilitySlots
+        : JSON.parse(availabilitySlots || "[]");
+    } catch (err) {
+      console.error("Invalid availabilitySlots JSON:", err);
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid availabilitySlots format" });
+    }
+
+    // 5️⃣ Create Doctor
     const doctor = new Doctor({
       name,
       email,
@@ -109,15 +199,10 @@ exports.addDoctor = async (req, res) => {
       languages,
       hospital,
       image: imagePath,
-      availabilitySlots: [],
+      availabilitySlots: [], // we will push parsed slots
     });
 
-    // ONLY ONCE declare slots
-    const slots = Array.isArray(availabilitySlots)
-      ? availabilitySlots
-      : JSON.parse(availabilitySlots || "[]");
-
-    // Correct normalization
+    // 6️⃣ Add slots to doctor
     slots.forEach((slot) => {
       doctor.availabilitySlots.push({
         type: slot.type || "weekly",
@@ -125,18 +210,21 @@ exports.addDoctor = async (req, res) => {
         startTime: slot.startTime,
         endTime: slot.endTime,
         duration: slot.duration || 30,
-        month: slot.month,
-        year: slot.year,
         date: slot.date || null,
       });
     });
 
+    // 7️⃣ Save doctor
     await doctor.save();
+
+    console.log("Doctor added successfully:", doctor);
 
     res.status(201).json({ success: true, doctor });
   } catch (error) {
     console.error("Add Doctor Error:", error);
-    res.status(500).json({ success: false, message: "Failed to add doctor" });
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to add doctor", error: error.message });
   }
 };
 
